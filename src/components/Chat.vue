@@ -1,48 +1,31 @@
 <template>
   <div class="chat">
-    <div>
-      <p>Use Rocket.Chat REST API to get your userId and token</p>
-      <div><pre><code>curl -X "POST" "https://chat.myserver.com/api/v1/login" \
--H "Content-Type: application/json; charset=utf-8" \
--d $'{
-"username": "my_username",
-"password": "my_password"
-  }'</code></pre>
-      </div>
-    </div>
+
     <div>Rocket.Chat websocket URL : {{webSocketUrl}}
     </div>
     <table>
       <tbody>
       <tr>
-        <th>Token auth</th>
-        <td>UserId : <input type="text" v-model="userId" :disabled="loggedIn"/></td>
-        <td>Auth Token : <input type="text" v-model="authToken" :disabled="loggedIn"/></td>
-        <td>
-          <button v-if="!loggedIn" v-on:click="login">Login</button>
-        </td>
-      </tr>
-      <tr>
-        <th>Basic auth</th>
+
         <td>Username : <input id="login" type="text" v-model="username" :disabled="loggedIn"/></td>
         <td>Password : <input id="password" type="password" v-model="password"
                               :disabled="loggedIn"/></td>
         <td>
-          <button v-if="!loggedIn" v-on:click="loginBasic">Login</button>
+          <button v-on:click="loginBasic">Login</button>
         </td>
       </tr>
-      <tr>
-        <th>Connect to room</th>
-        <td>Room id (default sandbox) : <input type="text" v-model="roomId"/></td>
+
+      <tr v-if="loggedIn">
+
+        <td>Room <input readonly type="text" v-model="roomId"/></td>
         <td>
-          <button v-if="!roomConnected" v-on:click="connectRoom">Subscribe to room</button>
+          <button v-on:click="connectRoom">Subscribe to room</button>
         </td>
       </tr>
       </tbody>
     </table>
     <div>
-      <h2>Messages</h2>
-      <div>
+      <div v-if="roomConnected">
         Send message : <input type="text" v-on:keyup.enter="sendMessage" v-model="newMessage"/>
         <button v-on:click="sendMessage">Send</button>
       </div>
@@ -54,10 +37,7 @@
         </div>
       </div>
     </div>
-    <div>
-      <button @click="decoWs">Deco Ws</button>
-      <button @click="recoWs">Reco Ws</button>
-    </div>
+
   </div>
 </template>
 
@@ -69,15 +49,15 @@
     name: 'Chat',
     data() {
       return {
-        webSocketUrl: 'wss://open.rocket.chat/websocket',
+        webSocketUrl: 'ws://63.32.52.233:3000/websocket',
         connectedToApi: true,
         loggedIn: false,
         userId: '',
         authToken: '',
-        username: '',
-        password: '',
+        username: 'admin',
+        password: 'qunEMIF09',
         roomName: 'sandbox',
-        roomId: 'Drjw54ftqGa4antMW',
+        roomId: 'GENERAL',
         roomConnected: false,
         newMessage: '',
         messages: [],
@@ -93,12 +73,12 @@
       api.onMessage (message => {
         this.messages.push (message)
       })
-      api.onClose (() => {
-        console.log ('closed')
-      })
+
+
       api.connectToServer ()
         .subscribe (() => {
             api.keepAlive () // Ping Server
+
           },
           (error) => {
             this.errors.push (error)
@@ -136,6 +116,7 @@
         api.connectToServer ()
           .subscribe (() => {
               api.keepAlive () // Ping Server
+              this.roomSubscribed = true;
             },
             (error) => {
               this.errors.push (error)
@@ -163,9 +144,15 @@
               if (apiEvent.msg === 'result') {
                 // success
                 this.messages.push (apiEvent.msg)
-                this.loggedIn = true
+
+               if(apiEvent.error){
+                 this.loggedIn = false;
+               }else{
+                 this.loggedIn = true;
+               }
               }
             }, (error) => {
+              alert("Sdf");
               this.errors.push (error)
             })
         }
@@ -181,6 +168,7 @@
               false
             ]
           })
+          this.roomConnected = true;
         }
       },
       sendMessage() {
